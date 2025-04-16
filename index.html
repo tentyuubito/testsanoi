@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ระบบจ่ายเงินระหว่างผู้เล่น (Responsive)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background: #f5f5f5;
+    }
+
+    input, button, select {
+      font-size: 16px;
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    button {
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1565c0;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .player-name-row {
+      margin-bottom: 10px;
+    }
+
+    .payment-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .payment-row select,
+    .payment-row input {
+      flex: 1 1 48%;
+    }
+
+    .player-box {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    @media (max-width: 600px) {
+      .payment-row select,
+      .payment-row input {
+        flex: 1 1 100%;
+      }
+    }
+
+    #result ul {
+      padding-left: 20px;
+    }
+
+    #result li {
+      margin-bottom: 4px;
+    }
+
+    h3 {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h2>ระบบจ่ายเงินระหว่างผู้เล่น</h2>
+
+  <div class="section">
+    <label>จำนวนผู้เล่น:</label>
+    <input type="number" id="playerCountInput" min="1" />
+    <button onclick="generateNameInputs()">ยืนยัน</button>
+  </div>
+
+  <form id="mainForm" onsubmit="handleSubmit(event)">
+    <div id="nameInputSection"></div>
+    <div id="paymentSection" style="display:none;"></div>
+    <button type="submit" style="display:none;" id="submitBtn">คำนวณ</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    let playerCount = 0;
+    let playerNames = [];
+
+    function generateNameInputs() {
+      playerCount = parseInt(document.getElementById('playerCountInput').value);
+      const nameSection = document.getElementById('nameInputSection');
+      nameSection.innerHTML = '';
+
+      if (!playerCount || playerCount < 1) {
+        nameSection.innerHTML = '<p style="color:red;">กรุณาใส่จำนวนผู้เล่นให้ถูกต้อง</p>';
+        return;
+      }
+
+      for (let i = 0; i < playerCount; i++) {
+        const row = document.createElement('div');
+        row.className = 'player-name-row';
+        row.innerHTML = `
+          <label>ชื่อผู้เล่นที่ ${i + 1}:</label>
+          <input type="text" name="name${i}" required />
+        `;
+        nameSection.appendChild(row);
+      }
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'ถัดไป';
+      btn.onclick = generatePaymentInputs;
+      nameSection.appendChild(btn);
+    }
+
+    function generatePaymentInputs() {
+      const data = new FormData(document.getElementById('mainForm'));
+      playerNames = [];
+
+      for (let i = 0; i < playerCount; i++) {
+        const name = data.get(`name${i}`)?.trim() || `ผู้เล่น ${i + 1}`;
+        playerNames.push(name);
+      }
+
+      const paySection = document.getElementById('paymentSection');
+      paySection.innerHTML = '';
+      paySection.style.display = 'block';
+      document.getElementById('submitBtn').style.display = 'inline-block';
+
+      for (let i = 0; i < playerCount; i++) {
+        const div = document.createElement('div');
+        div.className = 'player-box';
+        div.innerHTML = `
+          <strong>${playerNames[i]}</strong><br>
+          <div id="payments-${i}"></div>
+          <button type="button" onclick="addPaymentRow(${i})">+ เพิ่มรายการจ่าย</button>
+        `;
+        paySection.appendChild(div);
+        addPaymentRow(i);
+      }
+    }
+
+    function addPaymentRow(playerIndex) {
+      const container = document.getElementById(`payments-${playerIndex}`);
+      const rowCount = container.childElementCount;
+
+      const row = document.createElement('div');
+      row.className = 'payment-row';
+      row.innerHTML = `
+        <select name="from${playerIndex}_to${rowCount}">
+          ${playerNames.map((name, i) => i !== playerIndex ? `<option value="${i}">${name}</option>` : '').join('')}
+        </select>
+        <input type="number" name="from${playerIndex}_amount${rowCount}" min="0" step="0.01" placeholder="จำนวนเงิน" required />
+      `;
+      container.appendChild(row);
+    }
+
+    function handleSubmit(e) {
+      e.preventDefault();
+      const data = new FormData(document.getElementById('mainForm'));
+      const paid = Array(playerCount).fill(0);
+      const received = Array(playerCount).fill(0);
+
+      let result = "<h3>สรุปรายการ:</h3><ul>";
+
+      for (let i = 0; i < playerCount; i++) {
+        const payBox = document.getElementById(`payments-${i}`);
+        const rowCount = payBox.childElementCount;
+        for (let j = 0; j < rowCount; j++) {
+          const to = parseInt(data.get(`from${i}_to${j}`));
+          const amount = parseFloat(data.get(`from${i}_amount${j}`));
+          if (!isNaN(to) && !isNaN(amount) && amount > 0) {
+            result += `<li>${playerNames[i]} จ่ายให้ ${playerNames[to]} ${amount.toFixed(2)} บาท</li>`;
+            paid[i] += amount;
+            received[to] += amount;
+          }
+        }
+      }
+      result += "</ul>";
+
+      result += "<h3>ยอดสุทธิแต่ละคน:</h3><ul>";
+      for (let i = 0; i < playerCount; i++) {
+        const net = received[i] - paid[i];
+        const status = net > 0 ? "ได้รับ" : net < 0 ? "ต้องจ่าย" : "สมดุล";
+        result += `<li>${playerNames[i]}: ${status} ${Math.abs(net).toFixed(2)} บาท</li>`;
+      }
+      result += "</ul>";
+
+      result += "<h3>ใครติดหนี้ใครบ้าง:</h3><ul>";
+
+      let balances = [];
+      for (let i = 0; i < playerCount; i++) {
+        balances.push({ index: i, net: received[i] - paid[i] });
+      }
+
+      let debtors = balances.filter(p => p.net < 0).map(p => ({ ...p, net: -p.net }));
+      let creditors = balances.filter(p => p.net > 0).map(p => ({ ...p }));
+
+      for (let debtor of debtors) {
+        for (let creditor of creditors) {
+          if (debtor.net === 0) break;
+          if (creditor.net === 0) continue;
+
+          const amount = Math.min(debtor.net, creditor.net);
+          result += `<li>${playerNames[debtor.index]} ติดเงิน ${playerNames[creditor.index]} ${amount.toFixed(2)} บาท</li>`;
+          debtor.net -= amount;
+          creditor.net -= amount;
+        }
+      }
+
+      result += "</ul>";
+      document.getElementById('result').innerHTML = result;
+    }
+  </script>
+</body>
+</html>
