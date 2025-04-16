@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>ระบบจ่ายเงินระหว่างผู้เล่น (Responsive)</title>
+  <title>ระบบฉันงง</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * {
@@ -85,7 +85,7 @@
   </style>
 </head>
 <body>
-  <h2>ระบบจ่ายเงินระหว่างผู้เล่น</h2>
+  <h2>ระบบฉันงง</h2>
 
   <div class="section">
     <label>จำนวนผู้เล่น:</label>
@@ -221,7 +221,7 @@
           if (creditor.net === 0) continue;
 
           const amount = Math.min(debtor.net, creditor.net);
-          result += `<li>${playerNames[debtor.index]} ติดเงิน ${playerNames[creditor.index]} ${amount.toFixed(2)} บาท</li>`;
+          result += `<li>${playerNames[debtor.index]} โอนให้ ${playerNames[creditor.index]} ${amount.toFixed(2)} บาท</li>`;
           debtor.net -= amount;
           creditor.net -= amount;
         }
